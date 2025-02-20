@@ -5,7 +5,7 @@ optkernel3_fun=function(x,y,mu,theta=seq(from=0,to=10,length=50),max_active=2,he
 ### max_active is the maximum dimensions of input variables (which is MaxDim in the paper)
 ### heredity depends on how we construct the basic kernel space
 ### drop.tol is the parameter DEL for Algorithm 1 in the paper
-### drop.tol2
+### drop.tol2 is used to check the the validation of sel_kernel_input and set new act_dim
 ### stop.tol is the parameter Tol for Algorithm 2 in the paper
 ### stop2.tol is the parameter Tol for Algorithm 1 in the paper
 ### max_iter_1 is the parameter MaxIter for Algorithm 1 in the paper (need check)
@@ -88,7 +88,7 @@ optkernel3_fun=function(x,y,mu,theta=seq(from=0,to=10,length=50),max_active=2,he
     lambda=rep(1/nn,nn)
     #lambda=c(weight_old*((nn-1)/nn),1/nn)
     K_now=0
-    l=1
+    l=1 # The iteration for algorithm 2
     for (i in 1:nn){
       K_now=K_now+lambda[i]*K_sel[ , ,i]
     }
@@ -136,15 +136,17 @@ optkernel3_fun=function(x,y,mu,theta=seq(from=0,to=10,length=50),max_active=2,he
   K_sel=K_now # The kernel matrix we have selected
   size_sel=1
   weight=1
-  t=0
+  t=0 # The total iteration for the method
   
   K_order=1
   sel_kernel_input=NULL
   sel_theta=NULL
   
-  while (K_order<=max_active && t<=max_iter_1){
-    while (t<=max_iter_1 && length(left)>0){
+  while (K_order<=max_active){
+    t0=0 # The iteration for algorithm 1
+    while (t0<=max_iter_1 && length(left)>0){
       t=t+1
+      t0=t0+1
       size_left=length(left)
       possible_phi=rep(0,length(left))
       q=solve(K_now+mu*I)
