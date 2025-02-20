@@ -1,0 +1,60 @@
+```{r}
+library(abind)
+library(foreach)
+library(doParallel)
+
+library(lattice)
+library(ggplot2)
+library(GPfit)
+library(lhs)
+library(laGP)
+library(mlegp)
+library(MRFA)
+
+rm(list=ls())
+```
+
+```{r}
+source('header.R')
+```
+
+```{r}
+B=10
+theta=seq(from=1,to=9,length=5)
+theta=c(theta*10^-2,theta*10^-1,theta,theta*10,theta*10^2)
+mu=c(0.005,0.01,0.02,0.05,0.1,0.5)
+loocv_test=matrix(0,B,length(mu))
+p=6
+n=200
+for (k in 1:B){
+  
+  ### Generate the test data
+  a <- seq(from=0,to=1,by=0.017)
+  m <- length(a)
+  xx <- cbind(rep(a,each=m), rep(a,times=m))
+  xx <- cbind(xx,randomLHS(m^2,k=p-2))
+  y_mesh <-michal(xx)
+  ### Generate the training data
+  n = 200
+  x <- maximinLHS(n, k=p)
+  y <- michal(x[,1:2])+runif(n,min=-0.02,max=0.02) # add noise
+  
+  loocv_test[k, ]=optkernel_fun_loocv_test(x,y,mu=mu,theta=theta,max_active=4,heredity="strong",drop.tol=0.05,drop.tol2=0.05,stop.tol=0.005,stop2.tol=0.005,max_iter_1=1000,max_iter_2=1000,x.norm=FALSE)
+  
+}
+```
+
+```{r}
+box=data.frame(loocv=c(loocv_test[ ,1],loocv_test[ ,2],loocv_test[ ,3],loocv_test[ ,4],loocv_test[ ,5],loocv_test[ ,6]),type=rep(c(0.005,0.01,0.02,0.05,0.1,0.5),each=B))
+ggplot(box, aes(x=as.factor(type), y=loocv)) + 
+  geom_boxplot(fill="slateblue", alpha=0.2) + 
+  xlab("mu")
+#ggsave("test_cv_boxplot.pdf")
+```
+
+```{r}
+p=ggplot(box, aes(type, y=loocv))
+p + geom_smooth()+scale_x_log10()+labs(x=expression(mu),y="LOO-CV")+geom_vline(aes(xintercept=0.09),colour='red',linetype='dashed')
+#the vertical line may change.
+#ggsave("test_cv_smooth_3.pdf")
+```
